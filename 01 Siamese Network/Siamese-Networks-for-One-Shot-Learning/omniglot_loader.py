@@ -57,7 +57,7 @@ class OmniglotLoader:
         self._current_evaluation_alphabet_index = 0
 
         self.load_dataset()
-
+        print(self.train_dictionary)
         if (self.use_augmentation):
             self.image_augmentor = self.createAugmentor()
         else:
