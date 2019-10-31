@@ -18,7 +18,7 @@ def create_data():
     train_path = './../data/sentences_background'
     train_file_list = os.listdir(train_path)
     print('$$$$$$$$$', train_path, train_file_list)
-    loop_num = 100 #循环产生随机句子，循环100次，后面可调整训练数据规模
+    loop_num = 300 #循环产生随机句子，循环100次，后面可调整训练数据规模
     pair_num_each = 300 #每次生成300对，共3w对训练数据
     way_num, shot_num = 5, 5 #当前采用5-way-5-shot采样策略，每次取5类，每类取5个句子
     for iter_index in range(loop_num):
@@ -262,20 +262,22 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
     epochs_num = 1000
     embed_size = 768  # 词向量维度
     max_len = 100 # 每句话的最大长度100，平均句子长度6
-    max_words = 6872+1   # 统计得到该文档用到的词的个数7282
+    max_words = 9205+1   # 统计得到该文档用到的词的个数7282
     sentences1_data = keras.preprocessing.sequence.pad_sequences(sentences1_data,
                                                                  padding='post',
                                                                  maxlen=max_len)
     sentences2_data = keras.preprocessing.sequence.pad_sequences(sentences2_data,
                                                                  padding='post',
                                                                  maxlen=max_len)
-
+    # print(len(sentences1_data),sentences1_data[0])
+    #load test data100
     test_data1 = keras.preprocessing.sequence.pad_sequences(test_data1,
                                                                  padding='post',
                                                                  maxlen=max_len)
     test_data2 = keras.preprocessing.sequence.pad_sequences(test_data2,
                                                                  padding='post',
                                                                  maxlen=max_len)
+
 
     embedding_matrix = np.zeros((max_words, embed_size))
     with open('index_bert_dict.json', 'r', encoding='utf-8') as f:
@@ -303,10 +305,10 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
     l1_distance_layer = tf.keras.layers.Lambda(
         lambda tensors: K.abs(tensors[0] - tensors[1]))
     l1_distance = l1_distance_layer([max_pooling1, max_pooling2])
-    mlp_1 = tf.keras.layers.Dense(32, activation=tf.nn.sigmoid)(l1_distance)
-    mlp_2 = tf.keras.layers.Dense(16, activation=tf.nn.sigmoid)(mlp_1)
-    mlp_out2 = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(mlp_2)
-    model = tf.keras.Model([input1, input2], mlp_out2)
+    # print(l1_distance.shape)
+
+    mlp_out = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(l1_distance)
+    model = tf.keras.Model([input1, input2], mlp_out)
 
     # model.save('m1.h5')
     model.summary()

@@ -11,14 +11,14 @@ import csv
 import pkuseg
 import json
 import random
-import keras.backend as K
+
 #BERT将一个句子分词后，每个词转为768向量后，输入BiLSTM+attation+polling+MLP做分类
 
 def create_data():
     train_path = './../data/sentences_background'
     train_file_list = os.listdir(train_path)
-    print('$$$$$$$$$', train_path, train_file_list)
-    loop_num = 100 #循环产生随机句子，循环100次，后面可调整训练数据规模
+    # print('$$$$$$$$$', train_path, train_file_list)
+    loop_num = 200 #循环产生随机句子，循环100次，后面可调整训练数据规模
     pair_num_each = 300 #每次生成300对，共3w对训练数据
     way_num, shot_num = 5, 5 #当前采用5-way-5-shot采样策略，每次取5类，每类取5个句子
     for iter_index in range(loop_num):
@@ -55,9 +55,8 @@ def create_data():
 def create_test_data():
     test_path = './../data/sentences_evaluation'
     test_file_list = os.listdir(test_path)
-    print('$$$$$$$$$', test_path, test_file_list)
     loop_num = 100  # 循环产生随机句子，循环100次，后面可调整训练数据规模
-    pair_num_each = 300  # 每次生成300对，共3w对训练数据
+    # pair_num_each = 300  # 每次生成300对，共3w对训练数据
     way_num, shot_num = 5, 5  # 当前采用5-way-5-shot采样策略，每次取5类，每类取5个句子
     for iter_index in range(loop_num):
         selected_labels_indexes = [random.randint(0, len(test_file_list) - 1) for i in range(way_num)]
@@ -262,20 +261,22 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
     epochs_num = 1000
     embed_size = 768  # 词向量维度
     max_len = 100 # 每句话的最大长度100，平均句子长度6
-    max_words = 6872+1   # 统计得到该文档用到的词的个数7282
+    max_words = 8404+2   # 统计得到该文档用到的词的个数7282
     sentences1_data = keras.preprocessing.sequence.pad_sequences(sentences1_data,
                                                                  padding='post',
                                                                  maxlen=max_len)
     sentences2_data = keras.preprocessing.sequence.pad_sequences(sentences2_data,
                                                                  padding='post',
                                                                  maxlen=max_len)
-
+    # print(len(sentences1_data),sentences1_data[0])
+    #load test data100
     test_data1 = keras.preprocessing.sequence.pad_sequences(test_data1,
                                                                  padding='post',
                                                                  maxlen=max_len)
     test_data2 = keras.preprocessing.sequence.pad_sequences(test_data2,
                                                                  padding='post',
                                                                  maxlen=max_len)
+
 
     embedding_matrix = np.zeros((max_words, embed_size))
     with open('index_bert_dict.json', 'r', encoding='utf-8') as f:
@@ -294,19 +295,12 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
     print(input1.shape, input2.shape, embed1.shape, embed2.shape)
     lstm_out1 = tf.keras.layers.LSTM(64, return_sequences=True)(embed1)
     lstm_out2 = tf.keras.layers.LSTM(64, return_sequences=True)(embed2)
-
     max_pooling1 = tf.keras.layers.GlobalMaxPooling1D()(lstm_out1)
     max_pooling2 = tf.keras.layers.GlobalMaxPooling1D()(lstm_out2)
-
-    # merge_vector = tf.keras.layers.concatenate([max_pooling1, max_pooling2], axis=-1)
-    # cal difference
-    l1_distance_layer = tf.keras.layers.Lambda(
-        lambda tensors: K.abs(tensors[0] - tensors[1]))
-    l1_distance = l1_distance_layer([max_pooling1, max_pooling2])
-    mlp_1 = tf.keras.layers.Dense(32, activation=tf.nn.sigmoid)(l1_distance)
-    mlp_2 = tf.keras.layers.Dense(16, activation=tf.nn.sigmoid)(mlp_1)
-    mlp_out2 = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(mlp_2)
-    model = tf.keras.Model([input1, input2], mlp_out2)
+    merge_vector = tf.keras.layers.concatenate([max_pooling1, max_pooling2], axis=-1)
+    mlp_1 = tf.keras.layers.Dense(32, activation=tf.nn.sigmoid)(merge_vector)
+    mlp_out = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(mlp_1)
+    model = tf.keras.Model([input1, input2], mlp_out)
 
     # model.save('m1.h5')
     model.summary()
@@ -326,14 +320,16 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
     results = model.evaluate([test_data1, test_data2], test_label)
     print('step5: 评估模型效果(损失-精度）：...', results)
 
-    # print('step6: predict test data for count...')
-    # predictions = model.predict(test_data)
-    # predict = np.argmax(predictions, axis=1)
+    print('step6: predict test data for count...')
+    predictions = model.predict([test_data1, test_data2])
+    predict = np.argmax(predictions, axis=1)
     # print(predict)
-    # with open('02bert_lstm_mlp_predict.csv', 'w', newline='', encoding='utf-8') as csvwriter:
-    #     spamwriter = csv.writer(csvwriter, delimiter=' ')
-    #     for pre_val in predict:
-    #         spamwriter.writerow([pre_val])
+    with open('meta_learning_structure_1_result_record.csv', 'w', newline='', encoding='utf-8') as csvwriter:
+        spamwriter = csv.writer(csvwriter, delimiter=' ')
+        spamwriter.writerow('meta_learning_structure_1')
+        spamwriter.writerow('test accury ',results)
+        for pre_val in predict:
+            spamwriter.writerow([pre_val])
 
 
 if __name__ == '__main__':

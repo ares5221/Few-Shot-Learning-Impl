@@ -229,7 +229,7 @@ def pere_test_data(content_data):
 
     # save label info
     if not os.path.exists("test_label.npy"):
-        np.save("test_label.npy", np.array(train_label))
+        np.save("test_label.npy", np.array(test_label))
     print(len(test_label))
     print(test_label[0])
 
@@ -306,8 +306,8 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
         lambda tensors: K.abs(tensors[0] - tensors[1]))
     l1_distance = l1_distance_layer([max_pooling1, max_pooling2])
     # print(l1_distance.shape)
-
-    mlp_out = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(l1_distance)
+    mlp_1 = tf.keras.layers.Dense(32, activation=tf.nn.sigmoid)(l1_distance)
+    mlp_out = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(mlp_1)
     model = tf.keras.Model([input1, input2], mlp_out)
 
     # model.save('m1.h5')

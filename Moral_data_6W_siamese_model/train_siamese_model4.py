@@ -18,7 +18,7 @@ def create_data():
     train_path = './../data/sentences_background'
     train_file_list = os.listdir(train_path)
     print('$$$$$$$$$', train_path, train_file_list)
-    loop_num = 100 #循环产生随机句子，循环100次，后面可调整训练数据规模
+    loop_num = 200 #循环产生随机句子，循环100次，后面可调整训练数据规模
     pair_num_each = 300 #每次生成300对，共3w对训练数据
     way_num, shot_num = 5, 5 #当前采用5-way-5-shot采样策略，每次取5类，每类取5个句子
     for iter_index in range(loop_num):
@@ -262,7 +262,7 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
     epochs_num = 1000
     embed_size = 768  # 词向量维度
     max_len = 100 # 每句话的最大长度100，平均句子长度6
-    max_words = 6872+1   # 统计得到该文档用到的词的个数7282
+    max_words = 8404+2   # 统计得到该文档用到的词的个数7282
     sentences1_data = keras.preprocessing.sequence.pad_sequences(sentences1_data,
                                                                  padding='post',
                                                                  maxlen=max_len)

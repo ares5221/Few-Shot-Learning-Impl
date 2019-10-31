@@ -229,7 +229,7 @@ def pere_test_data(content_data):
 
     # save label info
     if not os.path.exists("test_label.npy"):
-        np.save("test_label.npy", np.array(train_label))
+        np.save("test_label.npy", np.array(test_label))
     print(len(test_label))
     print(test_label[0])
 
@@ -299,7 +299,8 @@ def build_model(sentences1_data, sentences2_data, train_label, test_data1, test_
     max_pooling1 = tf.keras.layers.GlobalMaxPooling1D()(lstm_out1)
     max_pooling2 = tf.keras.layers.GlobalMaxPooling1D()(lstm_out2)
     merge_vector = tf.keras.layers.concatenate([max_pooling1, max_pooling2], axis=-1)
-    mlp_out = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(merge_vector)
+    mlp_1 = tf.keras.layers.Dense(32, activation=tf.nn.sigmoid)(merge_vector)
+    mlp_out = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(mlp_1)
     model = tf.keras.Model([input1, input2], mlp_out)
 
     # model.save('m1.h5')
